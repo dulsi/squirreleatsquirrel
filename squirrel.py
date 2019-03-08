@@ -71,7 +71,7 @@ def main():
     BASICFONT = pygame.font.Font('freesansbold.ttf', 32)
 
     # load the image files
-    imgFiles = ['squirrel2.png', 'squirrel_unicorn.png', 'squirrel_twohead.png', 'squirrel_neck.png', 'squirrel_snake.png', 'squirrel_skeleton.png']
+    imgFiles = ['squirrel2.png', 'squirrel_unicorn.png', 'squirrel_twohead.png', 'squirrel_neck.png', 'squirrel_snake.png', 'squirrel_skeleton.png', 'squirrel_spider.png']
     SQUIR_IMG = []
     for name in imgFiles:
         img = []
