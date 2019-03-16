@@ -108,7 +108,7 @@ def runGame():
     winRect = winSurf.get_rect()
     winRect.center = (HALF_WINWIDTH, HALF_WINHEIGHT)
 
-    winSurf2 = BASICFONT.render('(Press "r" to restart.)', True, WHITE)
+    winSurf2 = BASICFONT.render('(Press "r" to return to title screen.)', True, WHITE)
     winRect2 = winSurf2.get_rect()
     winRect2.center = (HALF_WINWIDTH, HALF_WINHEIGHT + 30)
 
@@ -252,9 +252,6 @@ def runGame():
                         if playerObj['facing'] != RIGHT: # change player image
                             playerObj['surface'] = pygame.transform.scale(SQUIR_IMG[0][0], (playerObj['size'], playerObj['size']))
                         playerObj['facing'] = RIGHT
-                    elif winMode and event.key == K_r:
-                        STATE = STATE_GAME
-                        return
 
             elif event.type == KEYUP:
                 if event.key == K_ESCAPE:
@@ -271,6 +268,9 @@ def runGame():
                     moveUp = False
                 elif event.key in (K_DOWN, K_s):
                     moveDown = False
+                elif winMode and event.key == K_r:
+                    STATE = STATE_TITLE
+                    return
 
 
         if not gameOverMode: # and STATE == STATE_GAME:
