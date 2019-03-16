@@ -33,6 +33,9 @@ SQUIRRELMAXSPEED = 7 # fastest squirrel speed
 DIRCHANGEFREQ = 2    # % chance of direction change per frame
 LEFT = 'left'
 RIGHT = 'right'
+STATE_TITLE = 1
+STATE_GAME = 2
+STATE = STATE_TITLE
 
 """
 This program has three data structures to represent the player, enemy squirrels, and grass background objects. The data structures are dictionaries with the following keys:
@@ -61,7 +64,7 @@ Grass data structure keys:
 """
 
 def main():
-    global FPSCLOCK, DISPLAYSURF, BASICFONT, SQUIR_IMG, GRASSIMAGES
+    global FPSCLOCK, DISPLAYSURF, BASICFONT, SQUIR_IMG, GRASSIMAGES, TITLE
 
     pygame.init()
     FPSCLOCK = pygame.time.Clock()
@@ -69,6 +72,7 @@ def main():
     DISPLAYSURF = pygame.display.set_mode((WINWIDTH, WINHEIGHT))
     pygame.display.set_caption('Squirrel Eat Squirrel')
     BASICFONT = pygame.font.Font('freesansbold.ttf', 32)
+    TITLE = pygame.image.load("title.png")
 
     # load the image files
     imgFiles = ['squirrel2.png', 'squirrel_unicorn.png', 'squirrel_twohead.png', 'squirrel_neck.png', 'squirrel_snake.png', 'squirrel_skeleton.png', 'squirrel_spider.png']
@@ -87,6 +91,7 @@ def main():
 
 
 def runGame():
+    global STATE
     # set up variables for the start of a new game
     invulnerableMode = False  # if the player is invulnerable
     invulnerableStartTime = 0 # time the player became invulnerable
@@ -106,6 +111,9 @@ def runGame():
     winSurf2 = BASICFONT.render('(Press "r" to restart.)', True, WHITE)
     winRect2 = winSurf2.get_rect()
     winRect2.center = (HALF_WINWIDTH, HALF_WINHEIGHT + 30)
+
+    titleRect = TITLE.get_rect()
+    titleRect.center = (HALF_WINWIDTH, 70)
 
     # camerax and cameray are the top left of where the camera view is
     camerax = 0
@@ -204,48 +212,58 @@ def runGame():
             DISPLAYSURF.blit(sObj['surface'], sObj['rect'])
 
 
-        # draw the player squirrel
-        flashIsOn = round(time.time(), 1) * 10 % 2 == 1
-        if not gameOverMode and not (invulnerableMode and flashIsOn):
-            playerObj['rect'] = pygame.Rect( (playerObj['x'] - camerax,
-                                              playerObj['y'] - cameray - getBounceAmount(playerObj['bounce'], BOUNCERATE, BOUNCEHEIGHT),
-                                              playerObj['size'],
-                                              playerObj['size']) )
-            DISPLAYSURF.blit(playerObj['surface'], playerObj['rect'])
+        if STATE == STATE_TITLE:
+            DISPLAYSURF.blit(TITLE, titleRect)
+        else:
+            # draw the player squirrel
+            flashIsOn = round(time.time(), 1) * 10 % 2 == 1
+            if not gameOverMode and not (invulnerableMode and flashIsOn):
+                playerObj['rect'] = pygame.Rect( (playerObj['x'] - camerax,
+                                                  playerObj['y'] - cameray - getBounceAmount(playerObj['bounce'], BOUNCERATE, BOUNCEHEIGHT),
+                                                  playerObj['size'],
+                                                  playerObj['size']) )
+                DISPLAYSURF.blit(playerObj['surface'], playerObj['rect'])
 
 
-        # draw the health meter
-        drawHealthMeter(playerObj['health'])
+            # draw the health meter
+            drawHealthMeter(playerObj['health'])
 
         for event in pygame.event.get(): # event handling loop
             if event.type == QUIT:
                 terminate()
 
             elif event.type == KEYDOWN:
-                if event.key in (K_UP, K_w):
-                    moveDown = False
-                    moveUp = True
-                elif event.key in (K_DOWN, K_s):
-                    moveUp = False
-                    moveDown = True
-                elif event.key in (K_LEFT, K_a):
-                    moveRight = False
-                    moveLeft = True
-                    if playerObj['facing'] != LEFT: # change player image
-                        playerObj['surface'] = pygame.transform.scale(SQUIR_IMG[0][1], (playerObj['size'], playerObj['size']))
-                    playerObj['facing'] = LEFT
-                elif event.key in (K_RIGHT, K_d):
-                    moveLeft = False
-                    moveRight = True
-                    if playerObj['facing'] != RIGHT: # change player image
-                        playerObj['surface'] = pygame.transform.scale(SQUIR_IMG[0][0], (playerObj['size'], playerObj['size']))
-                    playerObj['facing'] = RIGHT
-                elif winMode and event.key == K_r:
-                    return
+                if STATE != STATE_TITLE:
+                    if event.key in (K_UP, K_w):
+                        moveDown = False
+                        moveUp = True
+                    elif event.key in (K_DOWN, K_s):
+                        moveUp = False
+                        moveDown = True
+                    elif event.key in (K_LEFT, K_a):
+                        moveRight = False
+                        moveLeft = True
+                        if playerObj['facing'] != LEFT: # change player image
+                            playerObj['surface'] = pygame.transform.scale(SQUIR_IMG[0][1], (playerObj['size'], playerObj['size']))
+                        playerObj['facing'] = LEFT
+                    elif event.key in (K_RIGHT, K_d):
+                        moveLeft = False
+                        moveRight = True
+                        if playerObj['facing'] != RIGHT: # change player image
+                            playerObj['surface'] = pygame.transform.scale(SQUIR_IMG[0][0], (playerObj['size'], playerObj['size']))
+                        playerObj['facing'] = RIGHT
+                    elif winMode and event.key == K_r:
+                        STATE = STATE_GAME
+                        return
 
             elif event.type == KEYUP:
+                if event.key == K_ESCAPE:
+                    terminate()
+                if STATE == STATE_TITLE:
+                    STATE = STATE_GAME
+                    return
                 # stop moving the player's squirrel
-                if event.key in (K_LEFT, K_a):
+                elif event.key in (K_LEFT, K_a):
                     moveLeft = False
                 elif event.key in (K_RIGHT, K_d):
                     moveRight = False
@@ -254,57 +272,57 @@ def runGame():
                 elif event.key in (K_DOWN, K_s):
                     moveDown = False
 
-                elif event.key == K_ESCAPE:
-                    terminate()
 
-        if not gameOverMode:
-            # actually move the player
-            if moveLeft:
-                playerObj['x'] -= MOVERATE
-            if moveRight:
-                playerObj['x'] += MOVERATE
-            if moveUp:
-                playerObj['y'] -= MOVERATE
-            if moveDown:
-                playerObj['y'] += MOVERATE
+        if not gameOverMode: # and STATE == STATE_GAME:
+            if STATE == STATE_GAME:
+                # actually move the player
+                if moveLeft:
+                    playerObj['x'] -= MOVERATE
+                if moveRight:
+                    playerObj['x'] += MOVERATE
+                if moveUp:
+                    playerObj['y'] -= MOVERATE
+                if moveDown:
+                    playerObj['y'] += MOVERATE
 
-            if (moveLeft or moveRight or moveUp or moveDown) or playerObj['bounce'] != 0:
-                playerObj['bounce'] += 1
+                if (moveLeft or moveRight or moveUp or moveDown) or playerObj['bounce'] != 0:
+                    playerObj['bounce'] += 1
 
-            if playerObj['bounce'] > BOUNCERATE:
-                playerObj['bounce'] = 0 # reset bounce amount
+                if playerObj['bounce'] > BOUNCERATE:
+                    playerObj['bounce'] = 0 # reset bounce amount
 
-            # check if the player has collided with any squirrels
-            for i in range(len(squirrelObjs)-1, -1, -1):
-                sqObj = squirrelObjs[i]
-                if 'rect' in sqObj and playerObj['rect'].colliderect(sqObj['rect']):
-                    # a player/squirrel collision has occurred
+                # check if the player has collided with any squirrels
+                for i in range(len(squirrelObjs)-1, -1, -1):
+                    sqObj = squirrelObjs[i]
+                    if 'rect' in sqObj and playerObj['rect'].colliderect(sqObj['rect']):
+                        # a player/squirrel collision has occurred
 
-                    if sqObj['width'] * sqObj['height'] <= playerObj['size']**2:
-                        # player is larger and eats the squirrel
-                        playerObj['size'] += int( (sqObj['width'] * sqObj['height'])**0.2 ) + 1
-                        del squirrelObjs[i]
+                        if sqObj['width'] * sqObj['height'] <= playerObj['size']**2:
+                            # player is larger and eats the squirrel
+                            playerObj['size'] += int( (sqObj['width'] * sqObj['height'])**0.2 ) + 1
+                            del squirrelObjs[i]
 
-                        if playerObj['facing'] == LEFT:
-                            playerObj['surface'] = pygame.transform.scale(SQUIR_IMG[0][1], (playerObj['size'], playerObj['size']))
-                        if playerObj['facing'] == RIGHT:
-                            playerObj['surface'] = pygame.transform.scale(SQUIR_IMG[0][0], (playerObj['size'], playerObj['size']))
+                            if playerObj['facing'] == LEFT:
+                                playerObj['surface'] = pygame.transform.scale(SQUIR_IMG[0][1], (playerObj['size'], playerObj['size']))
+                            if playerObj['facing'] == RIGHT:
+                                playerObj['surface'] = pygame.transform.scale(SQUIR_IMG[0][0], (playerObj['size'], playerObj['size']))
 
-                        if playerObj['size'] > WINSIZE:
-                            winMode = True # turn on "win mode"
+                            if playerObj['size'] > WINSIZE:
+                                winMode = True # turn on "win mode"
 
-                    elif not invulnerableMode:
-                        # player is smaller and takes damage
-                        invulnerableMode = True
-                        invulnerableStartTime = time.time()
-                        playerObj['health'] -= 1
-                        if playerObj['health'] == 0:
-                            gameOverMode = True # turn on "game over mode"
-                            gameOverStartTime = time.time()
+                        elif not invulnerableMode:
+                            # player is smaller and takes damage
+                            invulnerableMode = True
+                            invulnerableStartTime = time.time()
+                            playerObj['health'] -= 1
+                            if playerObj['health'] == 0:
+                                gameOverMode = True # turn on "game over mode"
+                                gameOverStartTime = time.time()
         else:
             # game is over, show "game over" text
             DISPLAYSURF.blit(gameOverSurf, gameOverRect)
             if time.time() - gameOverStartTime > GAMEOVERTIME:
+                STATE = STATE_TITLE
                 return # end the current game
 
         # check if the player has won.
